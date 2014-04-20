@@ -41,7 +41,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>../dep;$(IncludePath)</IncludePath>
     <LibraryPath>../dep/lib;$(LibraryPath)</LibraryPath>
-    <OutDir>$(SolutionDir)..\bin\$(Configuration)</OutDir>
+    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
+    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -54,6 +55,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>PocoFoundationmtd.lib;PocoNetmtd.lib;PocoUtilmtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>..\dep\BuildCounter.exe ..\src\Build.h</Command>
+      <Outputs>Updating Build Number</Outputs>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Message>Updating Build Number</Message>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -71,6 +78,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Main.cpp" />
+    <ClCompile Include="..\src\Network\Session.cpp" />
+    <ClCompile Include="..\src\Network\TCPServer.cpp" />
+    <ClCompile Include="..\src\Network\TCPServerConnection.cpp" />
+    <ClCompile Include="..\src\Network\TCPServerConnectionFactory.cpp" />
+    <ClCompile Include="..\src\Network\TCPServerDispatcher.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\Build.h" />
+    <ClInclude Include="..\src\Network\Session.h" />
+    <ClInclude Include="..\src\Network\TCPServer.h" />
+    <ClInclude Include="..\src\Network\TCPServerConnection.h" />
+    <ClInclude Include="..\src\Network\TCPServerConnectionFactory.h" />
+    <ClInclude Include="..\src\Network\TCPServerDispatcher.h" />
+    <ClInclude Include="..\src\Types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

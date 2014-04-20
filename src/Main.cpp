@@ -4,72 +4,29 @@
 #include <Poco/Net/SocketStream.h>
 #include <Poco/StreamCopier.h>
 #include <Poco/Net/ServerSocket.h>
-#include <Poco/Net/TCPServer.h>
+#include "Network/TCPServer.h"
 #include <Poco/Net/TCPServerParams.h>
-#include <Poco/Net/TCPServerConnectionFactory.h>
+#include "Network/TCPServerConnectionFactory.h"
+#include "Network/TCPServerDispatcher.h"
+#include <Poco/Logger.h>
+
+#include "Types.h"
+#include "Build.h"
+
+
 
 using Poco::Net::DNS;
 using Poco::Net::IPAddress;
 using Poco::Net::HostEntry;
 #include <iostream>
 
-class Session : public Poco::Net::TCPServerConnection
-{
-public:
-	Session(const Poco::Net::StreamSocket& socket) :
-		Poco::Net::TCPServerConnection(socket)
-	{
-	}
+#include <Poco/FileChannel.h>
+#include <Poco/ConsoleChannel.h>
+#include <Poco/SplitterChannel.h>
 
-	void run() override
-	{
-		std::cout << "New connection from: " << socket().peerAddress().host().toString() << std::endl;
+#include "Network/Session.h"
 
-		bool isOpen = true;
-		Poco::Timespan timeout(10, 0);
-		unsigned char incommingBuffer[1000];
-
-		while(isOpen)
-		{
-			if (socket().poll(timeout, Poco::Net::Socket::SELECT_READ) == false)
-				std::cout << "TIMEOUT!" << std::endl;
-			else
-			{
-				std::cout << "RX EVENT!!! --->";
-				int numBytes = 0;
-
-				try
-				{
-					numBytes = socket().receiveBytes(incommingBuffer, sizeof(incommingBuffer));
-				}
-				catch(Poco::Exception& exc)
-				{
-					std::cerr << "Network error: " << exc.displayText() << std::endl;
-					isOpen = false;
-				}
-
-				if (numBytes == 0)
-				{
-					std::cout << "Client closes connection!" << std::endl;
-					isOpen = false;
-				} else
-				{
-					std::cout << "Receiving numBytes: " << numBytes << std::endl;
-
-					char* name = ((char*)(incommingBuffer + 4));
-					std::cout << name << std::endl;
-					isOpen = false;
-				}
-			}
-		}
-
-		std::cout << "Connection finished!" << std::endl;
-	}
-};
-
-
-
-int main()
+int main(int argc, char* argv[], char* options[])
 {
 	/*
 	auto entry = DNS::hostByName("www.google.de");
@@ -98,15 +55,37 @@ int main()
 
 	Poco::StreamCopier::copyStream(socketStream, std::cout);*/
 
+	Poco::AutoPtr<Poco::ConsoleChannel> pCons(new Poco::ConsoleChannel);
+//	pCons->setProperty("archive", "timestamp");
+
+	Poco::AutoPtr<Poco::FileChannel> fileChannel(new Poco::FileChannel("Testing.log"));
+	//fileChannel->setProperty("path", "Testing.log");
+	fileChannel->setProperty("rotation", "daily");
+	fileChannel->setProperty("archive", "timestamp");
+
+	Poco::AutoPtr<Poco::SplitterChannel> splitterChannel(new Poco::SplitterChannel);
+	splitterChannel->addChannel(pCons);
+	splitterChannel->addChannel(fileChannel);
+
+
+	Poco::Logger::root().setChannel(splitterChannel);
+	auto& logger = Poco::Logger::get("Testing");
+	
+	logger.information("MyServer - Build: " + std::to_string(BUILD_NUMBER));
+	logger.warning("Warning!!!");
+
 	Poco::Net::ServerSocket svs(3724);
 
 	auto* params = new Poco::Net::TCPServerParams();
-	params->setMaxThreads(4);
+	params->setMaxThreads(1);
 	params->setMaxQueued(4);
 	params->setThreadIdleTime(100);
 
-	Poco::Net::TCPServer server(new Poco::Net::TCPServerConnectionFactoryImpl<Session>(), svs, params);
+	TCPServer server(new TCPServerConnectionFactoryImpl<Session>(), svs, params);
 	server.start();
+
+
+
 
 	for(;;)
 	{
