@@ -1,3 +1,27 @@
+/*
+The MIT License (MIT)
+
+Copyright (c) 2014 nightblizard
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include <Poco/Net/DNS.h>
 #include <Poco/Net/SocketAddress.h>
 #include <Poco/Net/StreamSocket.h>
@@ -26,40 +50,11 @@ using Poco::Net::HostEntry;
 
 #include "Network/Session.h"
 
-int main(int argc, char* argv[], char* options[])
+void initLogger()
 {
-	/*
-	auto entry = DNS::hostByName("www.google.de");
-	std::cout << "Canonical Name: " << entry.name() << std::endl;
-
-	auto aliases = entry.aliases();
-
-	for(auto& alias : aliases)
-		std::cout << "Alias: " << alias << std::endl;
-
-	auto addresses = entry.addresses();
-
-	for (auto& address : addresses)
-		std::cout << "Address: " << address.toString() << std::endl;
-	*/
-	/*
-	Poco::Net::SocketAddress socketAddress("www.appinf.com", 80);
-	Poco::Net::StreamSocket socket(socketAddress);
-	Poco::Net::SocketStream socketStream(socket);
-
-	socketStream << "GET / HTTP/1.1\r\n"
-					"Host: www.appinf.com\r\n"
-					"\r\n";
-
-	socketStream.flush();
-
-	Poco::StreamCopier::copyStream(socketStream, std::cout);*/
-
 	Poco::AutoPtr<Poco::ConsoleChannel> pCons(new Poco::ConsoleChannel);
-//	pCons->setProperty("archive", "timestamp");
 
 	Poco::AutoPtr<Poco::FileChannel> fileChannel(new Poco::FileChannel("Testing.log"));
-	//fileChannel->setProperty("path", "Testing.log");
 	fileChannel->setProperty("rotation", "daily");
 	fileChannel->setProperty("archive", "timestamp");
 
@@ -67,12 +62,14 @@ int main(int argc, char* argv[], char* options[])
 	splitterChannel->addChannel(pCons);
 	splitterChannel->addChannel(fileChannel);
 
+	gLog.setChannel(splitterChannel);
+}
 
-	Poco::Logger::root().setChannel(splitterChannel);
-	auto& logger = Poco::Logger::get("Testing");
-	
-	logger.information("MyServer - Build: " + std::to_string(BUILD_NUMBER));
-	logger.warning("Warning!!!");
+int main(int argc, char* argv[], char* options[])
+{
+	initLogger();
+
+	gLog.information("MyServer - Build: " + std::to_string(BUILD_NUMBER));
 
 	Poco::Net::ServerSocket svs(3724);
 
@@ -83,9 +80,6 @@ int main(int argc, char* argv[], char* options[])
 
 	TCPServer server(new TCPServerConnectionFactoryImpl<Session>(), svs, params);
 	server.start();
-
-
-
 
 	for(;;)
 	{

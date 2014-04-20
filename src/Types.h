@@ -13,3 +13,6 @@ typedef Poco::Int64 int64;
 
 typedef Poco::IntPtr intPtr;
 typedef Poco::UIntPtr uintPtr;
+
+
+#define gLog Poco::Logger::root()
